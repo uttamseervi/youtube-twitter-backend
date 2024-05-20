@@ -1,8 +1,8 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { apiError } from "../utils/apiError.js"
+import { apiResponse } from "../utils/apiResponse.js";
 import { User } from "../models/user.models.js"
 import { uploadonCloudinary } from "../utils/cloudinary.js"
-import { apiResponse } from "../utils/apiResponse.js";
 const registerUser = asyncHandler(async (req, res) => {
     /*
     step 1: get the user details from the frontend
@@ -18,10 +18,10 @@ const registerUser = asyncHandler(async (req, res) => {
     // but we use different things for the the coming from the URL
     const { fullName, email, username, password } = req.body
     console.log("Email", email);
-    /*
+    
     if ([fullName, email, username, password].some((field) => field.trim() === "")) {
         throw new apiError(400, "All fields are compulsory")
-    }*/
+    }
 
     const existedUser = User.findOne({
         /*we can use the inbuilt mongoose operators by using the dollar sign
