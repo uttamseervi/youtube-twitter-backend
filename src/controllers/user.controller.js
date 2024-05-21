@@ -4,6 +4,26 @@ import { apiResponse } from "../utils/apiResponse.js";
 import { User } from "../models/user.models.js"
 import { uploadonCloudinary } from "../utils/cloudinary.js"
 const registerUser = asyncHandler(async (req, res) => {
+
+
+
+
+    const generateAccessAndRefreshTokens = async (userId) => {
+        try {
+            const user = await User.findById({ userId })
+            const accessToken = user.generateAccessToken()
+            const refreshToken = user.generateRefreshToken()
+            user.refreshToken = refreshToken
+            /*NOTE: whenever we generate the refresh token we need to save it in the database for the further use or to recreate the access token later(after its expiry)*/
+            await user.save({ validateBeforeSave: false }) //SINCE IT IS A OBJECT CREATED BY MONGODB SO WE CAN USE SAVE METHOD TO SAVE IT
+            /*so when we save anything in the mongoose model we need to have the password field also to validate to avoid that we can use "validateBeforeSave:false " by doing this password field don't get kickin and we can proceed without having the password field*/
+            return { accessToken, refreshToken }
+
+        } catch (err) {
+            throw new apiError(500, "SOMETHING WENT WRONG WHILE GENERATING REFRESH AND ACCESS TOKEN");
+        }
+
+    }
     /*
     step 1: get the user details from the frontend
     step 2: validation of data sent by the user {whether the user has entered all the field or whether the email is in right manner etc}
@@ -18,7 +38,7 @@ const registerUser = asyncHandler(async (req, res) => {
     // but we use different things for the the coming from the URL
     const { fullName, email, username, password } = req.body
     console.log("Email", email);
-    
+
     if ([fullName, email, username, password].some((field) => field.trim() === "")) {
         throw new apiError(400, "All fields are compulsory")
     }
@@ -60,11 +80,71 @@ const registerUser = asyncHandler(async (req, res) => {
     )
     if (!createdUser) throw new apiError(500, "SOMETHING WENT WRONG WHILE REGISTERING THE USER")
     return res.status(201).json(
-        new apiResponse(200,createdUser,"User Registered Successfully")
+        new apiResponse(200, createdUser, "User Registered Successfully")
     )
-
-
-
 })
 
-export { registerUser }
+const loginUser = asyncHandler(async (req, res) => {
+
+    // todo's:
+    // first get the data from the req.body
+    // username or email is registered
+    // find the user
+    // check the password
+    // generate access and refresh token and send it to user
+    // we send the token to the user via cookies {send cookies}
+
+    const { username, email, password } = req.body
+    if (!username || !email) throw new apiError(400, "USERNAME OR EMAIL IS REQUIRED");
+
+    const user = await User.findOne({
+        $or: [{ username }, { email }]
+    })
+    if (!user) throw new apiError(404, "USER DOES NOT EXIST");
+
+    const isPasswordValid = await user.isPasswordCorrect(password) //ye password hamne req.body se liya hai
+    if (!isPasswordCorrect) throw new apiError(401, "PASSWORD INCORRECT");
+
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id)
+
+    // so here we have to create the one more user object bcoz the above "user" we created has empty refresh and access token in it bcoz we created the tokens using a functions and also we have to remove the unwanted fields also from the user object we took only username email and password but we still got the unwanted fields 
+
+    const loggedInUser = await User.findById(user.id).select("-password -refreshToken")
+
+
+    // we are writing these options for the security of the cookies so that cookies cant be modified by the frontend it can only be modified from the backend
+    const options = {
+        httpOnly: true,
+        secure: true
+    }
+
+    return res.status(200).cookie("accessToken", accessToken, options).cookie("refreshToken", refreshToken, options).json(
+        new apiResponse(200, {
+            user: loggedInUser, refreshToken, accessToken
+        }, "USER LOGGED IN SUCCESSFULLY")
+    )
+})
+
+const logoutUser = asyncHandler(async (req, res) => {
+    // const user = req.user._id
+    // here also we can use findById but if we do that then after deleting the tokens we have to save it again and all the circus instead we can use findByIdAndUpdate
+    await User.findByIdAndUpdate(
+        req.user._id,
+        {
+            $set: {
+                refreshToken: undefined
+            }
+        },
+        {
+            new: true
+            // jab value response me return hoke ayegi to new value ayegi old me to refresh token bhi ajjayega
+        }
+    )
+    const options = {
+        httpOnly: true,
+        secure: true
+    }
+    return res.status(200).clearCookie("accessToken", options).clearCookie("refreshToken", options).json(new apiResponse(200, {}, "User logged out "))
+})
+
+export { registerUser, loginUser, logoutUser }
