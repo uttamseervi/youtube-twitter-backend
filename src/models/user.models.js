@@ -58,6 +58,7 @@ userSchema.pre("save", async function (next) {
 
 userSchema.methods.isPasswordCorrect = async function (password) {
     return await bcrypt.compare(password, this.password)
+    // this.password is the hashed password here
 }
 
 // THIS IS HOW THE TOKEN IS GENERATED 
