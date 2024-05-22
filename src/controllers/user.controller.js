@@ -3,27 +3,25 @@ import { apiError } from "../utils/apiError.js"
 import { apiResponse } from "../utils/apiResponse.js";
 import { User } from "../models/user.models.js"
 import { uploadonCloudinary } from "../utils/cloudinary.js"
-const registerUser = asyncHandler(async (req, res) => {
 
 
+const generateAccessAndRefreshTokens = async (userId) => {
+    try {
+        const user = await User.findById({ userId })
+        const accessToken = user.generateAccessToken()
+        const refreshToken = user.generateRefreshToken()
+        user.refreshToken = refreshToken
+        /*NOTE: whenever we generate the refresh token we need to save it in the database for the further use or to recreate the access token later(after its expiry)*/
+        await user.save({ validateBeforeSave: false }) //SINCE IT IS A OBJECT CREATED BY MONGODB SO WE CAN USE SAVE METHOD TO SAVE IT
+        /*so when we save anything in the mongoose model we need to have the password field also to validate to avoid that we can use "validateBeforeSave:false " by doing this password field don't get kickin and we can proceed without having the password field*/
+        return { accessToken, refreshToken }
 
-
-    const generateAccessAndRefreshTokens = async (userId) => {
-        try {
-            const user = await User.findById({ userId })
-            const accessToken = user.generateAccessToken()
-            const refreshToken = user.generateRefreshToken()
-            user.refreshToken = refreshToken
-            /*NOTE: whenever we generate the refresh token we need to save it in the database for the further use or to recreate the access token later(after its expiry)*/
-            await user.save({ validateBeforeSave: false }) //SINCE IT IS A OBJECT CREATED BY MONGODB SO WE CAN USE SAVE METHOD TO SAVE IT
-            /*so when we save anything in the mongoose model we need to have the password field also to validate to avoid that we can use "validateBeforeSave:false " by doing this password field don't get kickin and we can proceed without having the password field*/
-            return { accessToken, refreshToken }
-
-        } catch (err) {
-            throw new apiError(500, "SOMETHING WENT WRONG WHILE GENERATING REFRESH AND ACCESS TOKEN");
-        }
-
+    } catch (err) {
+        throw new apiError(500, "SOMETHING WENT WRONG WHILE GENERATING REFRESH AND ACCESS TOKEN");
     }
+}
+
+const registerUser = asyncHandler(async (req, res) => {
     /*
     step 1: get the user details from the frontend
     step 2: validation of data sent by the user {whether the user has entered all the field or whether the email is in right manner etc}
@@ -38,26 +36,29 @@ const registerUser = asyncHandler(async (req, res) => {
     // but we use different things for the the coming from the URL
     const { fullName, email, username, password } = req.body
     console.log("Email", email);
+    console.log("username", username);
+    console.log("password", password);
+    console.log("fullName", fullName);
 
-    if ([fullName, email, username, password].some((field) => field.trim() === "")) {
+    if ([fullName, email, username, password].some((field) => field?.trim() === "")) {
         throw new apiError(400, "All fields are compulsory")
     }
 
-    const existedUser = User.findOne({
+    const existedUser = await User.findOne({
         /*we can use the inbuilt mongoose operators by using the dollar sign
         there are soo many operators for more ref use chatgpt*/
         $or: [{ username }, { email }]
 
     })
     if (existedUser) {
-        throw new apiError(409, "User with this user name or the email already exist")
+        throw new apiError(409, "User with this user name or the email already exist");
     }
     // here in the below middleware {multer} has given much more options like we have body inbuilt in express and we get the access to files attribute from multer
     // what multer does is it add additional functionalities to the request
     const avatarLocalPath = req.files?.avatar[0]?.path
     const coverImageLocalPath = req.files?.coverImage[0]?.path
 
-    if (!avatarLocalPath) throw new apiError(400, "Avatar file is required")
+    if (!avatarLocalPath) throw new apiError(400, "Avatar file is required");
 
     const avatar = await uploadonCloudinary(avatarLocalPath)
     const coverImage = await uploadonCloudinary(coverImageLocalPath)
@@ -78,7 +79,8 @@ const registerUser = asyncHandler(async (req, res) => {
     const createdUser = await User.findById(user._id).select(
         "-password -refreshToken"
     )
-    if (!createdUser) throw new apiError(500, "SOMETHING WENT WRONG WHILE REGISTERING THE USER")
+    if (!createdUser) throw new apiError(500, "SOMETHING WENT WRONG WHILE REGISTERING THE USER");
+    
     return res.status(201).json(
         new apiResponse(200, createdUser, "User Registered Successfully")
     )
@@ -95,7 +97,7 @@ const loginUser = asyncHandler(async (req, res) => {
     // we send the token to the user via cookies {send cookies}
 
     const { username, email, password } = req.body
-    if (!username || !email) throw new apiError(400, "USERNAME OR EMAIL IS REQUIRED");
+    if (!username && !email) throw new apiError(400, "USERNAME OR EMAIL IS REQUIRED");
 
     const user = await User.findOne({
         $or: [{ username }, { email }]
