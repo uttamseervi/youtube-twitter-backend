@@ -34,6 +34,13 @@ const registerUser = asyncHandler(async (req, res) => {
 */
     // we use "req.body()" to get the data from JSON or the forms
     // but we use different things for the the coming from the URL
+    /*console.log("THE OUTPUT OF REQ.BODY IS ",req.body);
+    THE OUTPUT OF REQ.BODY IS  [Object: null prototype] {
+        username: 'uttam',
+        email: 'uttam@uttam.com',
+        password: '12333',
+        fullName: 'uttamSeervi'
+      }*/
     const { fullName, email, username, password } = req.body
     console.log("Email", email);
     console.log("username", username);
@@ -55,10 +62,39 @@ const registerUser = asyncHandler(async (req, res) => {
     }
     // here in the below middleware {multer} has given much more options like we have body inbuilt in express and we get the access to files attribute from multer
     // what multer does is it add additional functionalities to the request
+    /*
+    console.log("THE OUTPUT OF REQ.FILES IS",req.files);
+    THE OUTPUT OF REQ.FILES IS [Object: null prototype] {
+        avatar: [
+          {
+            fieldname: 'avatar',
+            originalname: 'WIN_20230329_14_32_41_Pro.jpg',
+            encoding: '7bit',
+            mimetype: 'image/jpeg',
+            destination: './public/temp',
+            filename: 'WIN_20230329_14_32_41_Pro.jpg',
+            path: 'public\\temp\\WIN_20230329_14_32_41_Pro.jpg',
+            size: 376150
+          }
+        ],
+        coverImage: [
+          {
+            fieldname: 'coverImage',
+            originalname: 'pxfuel (1).jpg',
+            encoding: '7bit',
+            mimetype: 'image/jpeg',
+            destination: './public/temp',
+            filename: 'pxfuel (1).jpg',
+            path: 'public\\temp\\pxfuel (1).jpg',
+            size: 1105101
+          }
+        ]
+      }*/
     const avatarLocalPath = req.files?.avatar[0]?.path
     const coverImageLocalPath = req.files?.coverImage[0]?.path
 
     if (!avatarLocalPath) throw new apiError(400, "Avatar file is required");
+    // add the validation for the cover image from the git
 
     const avatar = await uploadonCloudinary(avatarLocalPath)
     const coverImage = await uploadonCloudinary(coverImageLocalPath)
