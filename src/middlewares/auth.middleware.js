@@ -6,7 +6,7 @@ import {User} from '../models/user.models.js'
 export const verifyJWT = asyncHandler(async (req, res, next) => {
     try {
         /*we have the access to cookies from the req and res coz we have given the access to these in app.js file by writing app.use(cookieParser())*/
-        const token = req.cookies?.accessToken || req.header("Authorization").replace("bearer ", "")
+        const token = req.cookies?.accessToken || req.header("Authorization").replace("Bearer ", "")
         // here is the reason why i have written the req.header()
         /* so if the user is sending the custom header instead of the cookie {for reference visit postman in that the header section} there is the key value pair the key is "Authorization" and the value is "bearer(bearer is a keyword)(oneBlankSpace after the blank space ->tokenName)AccessTokenName to access that cookie we write this " */
 

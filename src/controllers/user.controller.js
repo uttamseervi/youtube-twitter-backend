@@ -7,7 +7,7 @@ import { uploadonCloudinary } from "../utils/cloudinary.js"
 
 const generateAccessAndRefreshTokens = async (userId) => {
     try {
-        const user = await User.findById({ userId })
+        const user = await User.findById(userId)
         const accessToken = user.generateAccessToken()
         const refreshToken = user.generateRefreshToken()
         user.refreshToken = refreshToken
@@ -116,7 +116,7 @@ const registerUser = asyncHandler(async (req, res) => {
         "-password -refreshToken"
     )
     if (!createdUser) throw new apiError(500, "SOMETHING WENT WRONG WHILE REGISTERING THE USER");
-    
+
     return res.status(201).json(
         new apiResponse(200, createdUser, "User Registered Successfully")
     )
@@ -141,13 +141,13 @@ const loginUser = asyncHandler(async (req, res) => {
     if (!user) throw new apiError(404, "USER DOES NOT EXIST");
 
     const isPasswordValid = await user.isPasswordCorrect(password) //ye password hamne req.body se liya hai
-    if (!isPasswordCorrect) throw new apiError(401, "PASSWORD INCORRECT");
+    if (!isPasswordValid) throw new apiError(401, "PASSWORD INCORRECT");
 
     const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id)
 
     // so here we have to create the one more user object bcoz the above "user" we created has empty refresh and access token in it bcoz we created the tokens using a functions and also we have to remove the unwanted fields also from the user object we took only username email and password but we still got the unwanted fields 
 
-    const loggedInUser = await User.findById(user.id).select("-password -refreshToken")
+    const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
 
 
     // we are writing these options for the security of the cookies so that cookies cant be modified by the frontend it can only be modified from the backend

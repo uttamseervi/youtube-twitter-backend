@@ -69,19 +69,17 @@ userSchema.methods.generateAccessToken = async function () {
         email: this.email,
         fullName: this.fullName
     },
-        process.env.ACCESS_TOKEN_SECRET,
+        process.env.ACCES_TOKEN_SECRET,
         {
-            expiresIn: process.env.ACCESS_TOKEN_EXPIRY
+            expiresIn: process.env.ACCES_TOKEN_EXPIRY
         }
     )
 }
 userSchema.methods.generateRefreshToken = async function () {
     return jwt.sign({
-        _id: this._id,
-        email: this.email,
-        fullName: this.fullName
+        _id: this._id
     },
-        process.env.ACCESS_TOKEN_SECRET,
+        process.env.REFRESH_TOKEN_SECRET,
         {
             expiresIn: process.env.REFRESH_TOKEN_EXPIRY
         }
