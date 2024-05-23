@@ -3,6 +3,7 @@ import { apiError } from "../utils/apiError.js"
 import { apiResponse } from "../utils/apiResponse.js";
 import { User } from "../models/user.models.js"
 import { uploadonCloudinary } from "../utils/cloudinary.js"
+import jwt from "jsonwebtoken"
 
 
 const generateAccessAndRefreshTokens = async (userId) => {
@@ -184,8 +185,40 @@ const logoutUser = asyncHandler(async (req, res) => {
         httpOnly: true,
         secure: true
     }
-    
+
     return res.status(200).clearCookie("accessToken", options).clearCookie("refreshToken", options).json(new apiResponse(200, {}, "User logged out "))
 })
 
-export { registerUser, loginUser, logoutUser }
+const refreshAccessToken = asyncHandler(async (req, res) => {
+
+
+    const incomingRefreshToken = req.cookies?.refreshToken || req.body.refreshToken //ye token hame user bhej raha hai isko hame compare karna hai hamare DB  wale token ke sath
+    if (!incomingRefreshToken) throw new apiError(401, "UNAUTHORIZED REQUEST");
+
+
+    try {
+        const decodedToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET)
+
+        const user = await User.findById(decodedToken?._id);
+        if (!user) throw new apiError(401, "INVALID REFRESH TOKEN");
+        if (incomingRefreshToken !== user?.refreshToken) throw new apiError(401, " REFRESH TOKEN IS USED OR EXPIRED");
+
+        const options = {
+            httpOnly: true,
+            secure: true
+        }
+        const { accessToken, newRefreshToken } = await generateAccessToken(user._id);
+        return res.
+            status(200)
+            .cookie("accessToken", accessToken, options)
+            .cookie("refreshToken", newRefreshToken, options)
+            .json(new apiResponse(200, { accessToken, refreshToken: newRefreshToken }, "ACCESS TOKEN REFRESHED SUCCESSFULLY"))
+
+
+    } catch (error) {
+        throw new apiError(401, error?.message || "INVALID REFRESH TOKEN")
+    }
+
+})
+
+export { registerUser, loginUser, logoutUser, refreshAccessToken }

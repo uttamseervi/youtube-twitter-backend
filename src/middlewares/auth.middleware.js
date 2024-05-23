@@ -9,8 +9,8 @@ export const verifyJWT = asyncHandler(async (req, res, next) => {
         const token = req.cookies?.accessToken || req.header("Authorization").replace("Bearer ", "")
         // here is the reason why i have written the req.header()
         /* so if the user is sending the custom header instead of the cookie {for reference visit postman in that the header section} there is the key value pair the key is "Authorization" and the value is "bearer(bearer is a keyword)(oneBlankSpace after the blank space ->tokenName)AccessTokenName to access that cookie we write this " */
-        console.log(req.cookies.accessToken)
-        console.log("THIS IS THE TOKEN INFO",token);
+        // console.log(req.cookies.accessToken)
+        // console.log("THIS IS THE TOKEN INFO",token);
 
         
 

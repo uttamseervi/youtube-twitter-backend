@@ -1,7 +1,8 @@
 import { Router } from "express";
-import { logoutUser, registerUser,loginUser } from "../controllers/user.controller.js";
+import { logoutUser, registerUser,loginUser,refreshAccessToken } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js"
 import { verifyJWT } from "../middlewares/auth.middleware.js";
+
 
 const router = Router()
 
@@ -25,4 +26,9 @@ router.route("/login").post(loginUser)
 /*verifyJWT is the middleware hence it is written before our logout method 
 router ek method to run kardega lekin usko pata thodi hai dusra bhi hai isiliye hamne middleware wale file me next() likha hai*/
 router.route("/logout").post(verifyJWT, logoutUser)
+router.route("/refresh-token").post(refreshAccessToken)
+
+
+
+
 export default router
