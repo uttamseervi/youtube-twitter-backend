@@ -85,5 +85,9 @@ userSchema.methods.generateRefreshToken = async function () {
         }
     )
 }
+
+
+
+
 // inside mongoDB the names are stored in the form of the plurals if it is user then it is saved as users  
 export const User = mongoose.model('User', userSchema)

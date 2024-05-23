@@ -8,8 +8,8 @@ import { uploadonCloudinary } from "../utils/cloudinary.js"
 const generateAccessAndRefreshTokens = async (userId) => {
     try {
         const user = await User.findById(userId)
-        const accessToken = user.generateAccessToken()
-        const refreshToken = user.generateRefreshToken()
+        const accessToken = await user.generateAccessToken()
+        const refreshToken = await user.generateRefreshToken()
         user.refreshToken = refreshToken
         /*NOTE: whenever we generate the refresh token we need to save it in the database for the further use or to recreate the access token later(after its expiry)*/
         await user.save({ validateBeforeSave: false }) //SINCE IT IS A OBJECT CREATED BY MONGODB SO WE CAN USE SAVE METHOD TO SAVE IT
@@ -144,6 +144,8 @@ const loginUser = asyncHandler(async (req, res) => {
     if (!isPasswordValid) throw new apiError(401, "PASSWORD INCORRECT");
 
     const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id)
+    // console.log("ACCES TOKEN IS ",accessToken);
+    // console.log("refresh TOKEN IS ",refreshToken);
 
     // so here we have to create the one more user object bcoz the above "user" we created has empty refresh and access token in it bcoz we created the tokens using a functions and also we have to remove the unwanted fields also from the user object we took only username email and password but we still got the unwanted fields 
 
@@ -182,6 +184,7 @@ const logoutUser = asyncHandler(async (req, res) => {
         httpOnly: true,
         secure: true
     }
+    
     return res.status(200).clearCookie("accessToken", options).clearCookie("refreshToken", options).json(new apiResponse(200, {}, "User logged out "))
 })
 
