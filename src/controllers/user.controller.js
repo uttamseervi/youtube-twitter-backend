@@ -4,6 +4,7 @@ import { apiResponse } from "../utils/apiResponse.js";
 import { User } from "../models/user.models.js"
 import { uploadonCloudinary } from "../utils/cloudinary.js"
 import jwt from "jsonwebtoken"
+import mongoose from "mongoose";
 
 
 const generateAccessAndRefreshTokens = async (userId) => {
@@ -326,23 +327,72 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         },
         {
             $project: {
-                fullName:1,
-                subscribersCount:1,
-                channelSubscribedToCount:1,
-                isSubscribed:1,
-                avatar:1,
-                coverImage:1,
-                email:1,
+                fullName: 1,
+                subscribersCount: 1,
+                channelSubscribedToCount: 1,
+                isSubscribed: 1,
+                avatar: 1,
+                coverImage: 1,
+                email: 1,
 
             }/*what will project do????>>>  it will project the fields that we want to see in the result*/ /*we use project to remove the fields that we dont want to see in the result*/
 
 
         }
     ])
-    if(!channel?.length) throw new apiError(400,"CHANNEL DON'T EXIST");
+    if (!channel?.length) throw new apiError(400, "CHANNEL DON'T EXIST");
     return res
-    .status(200)
-    .json(new apiResponse(200,channel[0],"USER CHANNEL FETCHED SUCCESSFULLY"))
+        .status(200)
+        .json(new apiResponse(200, channel[0], "USER CHANNEL FETCHED SUCCESSFULLY"))
+})
+
+const getWatchHistory = asyncHandler(async (req, res) => {
+    const user = await User.aggregate([
+        {
+            $match: { _id: new mongoose.Types.ObjectId(req.user._id) }
+        },
+        {
+            $lookup: {
+                from: "videos", //MIGHT BE THE BUG FIX IT LATER
+                localField: "watchHistory",
+                foreignField: "_id",
+                as: "watchHistory",
+                /*WE USE A METHOD PIPELINE FOR NESTED PIPELINING OR FOR NESTED AGGREGATION*/
+                pipeline: [
+                    {
+                        $lookup: {
+                            from: "videos",
+                            localField: "owner",
+                            foreignField: "_id",
+                            as: "owner",
+                            pipeline: [
+                                {
+                                    $project: {
+                                        fullName: 1,
+                                        username: 1,
+                                        avatar: 1,
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        $addFields: {
+                            owner: {
+                                $first: "$owner",
+                                // also we can write 
+                                // ArrayElementsAt:["$owner"]
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {}
+    ])
+    return res
+        .status(200)
+        .json(new apiResponse(200, user[0].watchHistory, "USER WATCH HISTORY FETCHED SUCCESSFULLY"))
 })
 
 
@@ -355,4 +405,4 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
 
 
 
-export { registerUser, loginUser, logoutUser, refreshAccessToken, changeCurrentPassword, getCurrentUser, updateAccountDetails, updateUserAvatar, updateUserCoverImage }
+export { registerUser, loginUser, logoutUser, refreshAccessToken, changeCurrentPassword, getCurrentUser, updateAccountDetails, updateUserAvatar, updateUserCoverImage, getUserChannelProfile, getWatchHistory }
