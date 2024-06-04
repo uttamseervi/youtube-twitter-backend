@@ -68,7 +68,7 @@ const registerUser = asyncHandler(async (req, res) => {
     console.log("THE OUTPUT OF REQ.FILES IS",req.files);
     THE OUTPUT OF REQ.FILES IS [Object: null prototype] {
         avatar: [
-          {
+            {
             fieldname: 'avatar',
             originalname: 'WIN_20230329_14_32_41_Pro.jpg',
             encoding: '7bit',
@@ -77,10 +77,10 @@ const registerUser = asyncHandler(async (req, res) => {
             filename: 'WIN_20230329_14_32_41_Pro.jpg',
             path: 'public\\temp\\WIN_20230329_14_32_41_Pro.jpg',
             size: 376150
-          }
+            }
         ],
         coverImage: [
-          {
+            {
             fieldname: 'coverImage',
             originalname: 'pxfuel (1).jpg',
             encoding: '7bit',
@@ -89,9 +89,9 @@ const registerUser = asyncHandler(async (req, res) => {
             filename: 'pxfuel (1).jpg',
             path: 'public\\temp\\pxfuel (1).jpg',
             size: 1105101
-          }
+            }
         ]
-      }*/
+        }*/
     const avatarLocalPath = req.files?.avatar[0]?.path
     const coverImageLocalPath = req.files?.coverImage[0]?.path
 
@@ -173,8 +173,8 @@ const logoutUser = asyncHandler(async (req, res) => {
     await User.findByIdAndUpdate(
         req.user._id,
         {
-            $set: {
-                refreshToken: undefined
+            $unset: {
+                refreshToken: 1
             }
         },
         {
@@ -224,7 +224,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
 const changeCurrentPassword = asyncHandler(async (req, res) => {
     const { oldPassword, newPassword } = req.body;
-    await User.findById(req.user?._id) //check for the bug fixed the bug
+    const user = await User.findById(req.user?._id) //check for the bug fixed the bug
 
     const isPasswordCorrect = await user.isPasswordCorrect(oldPassword)
     if (!isPasswordCorrect) throw new apiError(400, "INVALID PASSWORD");
