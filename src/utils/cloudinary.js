@@ -1,7 +1,7 @@
 import { v2 as cloudinary } from "cloudinary"
 import { Console, log } from "console";
 import { response } from "express";
-import  fs  from "fs" //fs means file system we get this from the nodeJs 
+import fs from "fs" //fs means file system we get this from the nodeJs 
 // we use fs when we want to manage the file system and to do operations like read write open close etc 
 
 
@@ -85,4 +85,4 @@ const uploadonCloudinary = async (localFilePath) => {
     }
 }
 
-export {uploadonCloudinary}
+export { uploadonCloudinary }
