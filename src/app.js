@@ -3,6 +3,7 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 
 
+
 const app = express();
 
 app.use(cors({
@@ -19,10 +20,12 @@ app.use(cookieParser());
 // IMPORTING THE ROUTER
 import userRouter from './routes/user.routes.js'
 import videoRouter from "./routes/video.routes.js"
+import tweetRouter from "./routes/tweet.routes.js"
 
 // router declaration
 app.use("/api/v1/users",userRouter)
 app.use("/api/v1/videos",videoRouter)
+app.use("/api/v1/tweet",tweetRouter)
 
 
 
