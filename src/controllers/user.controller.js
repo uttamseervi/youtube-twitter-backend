@@ -2,9 +2,9 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { apiError } from "../utils/apiError.js"
 import { apiResponse } from "../utils/apiResponse.js";
 import { User } from "../models/user.models.js"
-import { uploadonCloudinary } from "../utils/cloudinary.js"
+import { uploadonCloudinary, deleteOnCloudinary } from "../utils/cloudinary.js"
 import jwt from "jsonwebtoken"
-import mongoose,{isValidObjectId} from "mongoose";
+import mongoose, { isValidObjectId } from "mongoose";
 
 
 const generateAccessAndRefreshTokens = async (userId) => {
@@ -42,7 +42,7 @@ const registerUser = asyncHandler(async (req, res) => {
         email: 'uttam@uttam.com',
         password: '12333',
         fullName: 'uttamSeervi'
-      }*/
+    }*/
     const { fullName, email, username, password } = req.body
     // console.log("Email", email);
     // console.log("username", username);
@@ -259,9 +259,13 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
 
 const updateUserAvatar = asyncHandler(async (req, res) => {
     const avatarLocalPath = req.file?.path; // MIGHT BE THE BUG UPDATE IT LATER 
+
     if (!avatarLocalPath) throw new apiError(400, "AVATAR FILE IS MISSING");
+
     const avatar = await uploadonCloudinary(avatarLocalPath);
+
     if (!avatar.url) throw new apiError(400, "ERROR WHILE UPLOADING THE AVATAR");
+    
     const user = await User.findByIdAndUpdate(
         req.user?._id,
         { $set: { avatar: avatar.url } },
