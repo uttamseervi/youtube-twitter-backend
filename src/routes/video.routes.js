@@ -6,7 +6,7 @@ import { publishVideo } from "../controllers/video.controller.js";
 
 const router = Router()
 // router.use(verifyJWT);
-router.route("/").post(
+router.route("/upload").post(
     verifyJWT,
     upload.fields([
         { name: "videoFile", maxCount: 1 }, { name: "thumbnail", maxCount: 1 }
