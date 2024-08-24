@@ -5,7 +5,7 @@ import { Comment } from "../models/comment.models.js"
 import { apiError } from "../utils/apiError.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import { uploadonCloudinary, deleteOnCloudinary } from "../utils/cloudinary.js";
-import { isValidObjectId } from "mongoose";
+import { isValidObjectId, Types } from "mongoose";
 
 
 
@@ -17,7 +17,123 @@ const getAllVideos = asyncHandler(async (req, res) => {
 
 const getVideoById = asyncHandler(async (req, res) => {
     const { videoId } = req.params
-    //TODO: get video by id
+    if (!isValidObjectId(videoId)) throw new apiError(400, "Invalid VideoId");
+    const video = await Video.findById(videoId);
+    if (!video) throw new apiError(400, "Failed to find the video");
+    const videoDetails = await Video.aggregate([
+        {
+            $match: {
+                _id: new mongoose.Types.ObjectId(videoId)
+            }
+        },
+        {
+            $lookup: {
+                from: "likes",
+                localField: "_id",
+                foreignField: "video",
+                as: "likesInfo",
+            }
+        },
+        {
+            $lookup: {
+                from: "comments",
+                localField: "_id",
+                foreignField: "video",
+                as: "comments"
+            }
+        },
+        {
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "ownerDetails",
+                pipeline: [
+                    {
+                        $lookup: {
+                            from: "subscribers",
+                            localField: "_id",
+                            foreignField: "channel",
+                            as: "subscribers"
+                        }
+                    },
+                    {
+                        $addFields: {
+                            subscribersCount: {
+                                $size: "$subscribers"
+                            },
+                            isSubscribed: {
+                                $cond: {
+                                    if: {
+                                        $in: [req.user?._id, "$subscribers.subscriber"]
+                                    },
+                                    then: true,
+                                    else: false
+                                }
+                            },
+                        },
+                    },
+                    {
+                        $project: {
+                            username: 1,
+                            subscribersCount: 1,
+                            "avatar.url": 1,
+                            isSubscribed: 1,
+
+                        }
+                    }
+
+                ]
+            }
+        },
+        {
+            $addFields: {
+                likesCount: {
+                    $size: "$likesInfo"
+                },
+                owner: {
+                    $first: "$ownerDetails"
+                },
+                isLiked: {
+                    $cond: {
+                        if: { $in: [req.user?._id, "$likesInfo.likedBy"] },
+                        then: true,
+                        else: false
+                    }
+                }
+            }
+        },
+        {
+            $project: {
+                "videoFile.url": 1,
+                title: 1,
+                description: 1,
+                views: 1,
+                createdAt: 1,
+                duration: 1,
+                comments: 1,
+                owner: 1,
+                likesCount: 1,
+                isLiked: 1
+            }
+        }
+    ])
+    if (videoDetails.length === 0) throw new apiError(400, "Failed to fetch the video details");
+    await Video.findByIdAndUpdate(
+        videoId,
+        {
+            $inc: {
+                views: 1
+            }
+        }
+    )
+    await User.updateOne(
+        { _id: req.user?._id },
+        { $push: { watchHistory: videoId } }
+    );
+    return res
+        .status(200)
+        .json(new apiResponse(200, videoDetails[0], "Video details fetched successfully"))
 })
 
 const publishVideo = asyncHandler(async (req, res) => {
@@ -142,7 +258,7 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
     if (!video) throw new apiError(400, "Failed to load the video");
 
     if (video.owner.toString() !== req.user?._id.toString()) throw new apiError(400, "Only owner can toggle the publish status");
-    
+
     const videoStatus = video.isPublished;
     const videoPublishToggle = await Video.findByIdAndUpdate(
         videoId,
@@ -162,4 +278,4 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
 })
 
 
-export { publishVideo, deleteVideo, updateVideo, togglePublishStatus }
+export { publishVideo, deleteVideo, updateVideo, togglePublishStatus, getAllVideos, getVideoById, }
