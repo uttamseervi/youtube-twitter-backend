@@ -89,7 +89,7 @@ const getVideoComments = asyncHandler(async (req, res) => {
                 },
                 isLiked: {
                     $cond: {
-                        if: { in: ["req.user?._id", "likes.likedBy"] },
+                        if: { in: [req.user?._id, "likes.likedBy"] },
                         then: true,
                         else: false
                     }
