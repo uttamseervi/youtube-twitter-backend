@@ -5,7 +5,7 @@ import { publishVideo, deleteVideo, getAllVideos, getVideoById, togglePublishSta
 
 
 const router = Router()
-// router.use(verifyJWT);
+router.use(verifyJWT);
 router.route("/upload").post(
     verifyJWT,
     upload.fields(

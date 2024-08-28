@@ -36,6 +36,7 @@ const addComment = asyncHandler(async (req, res) => {
 const updateComment = asyncHandler(async (req, res) => {
     const { commentId } = req.params;
     const { content } = req.body
+    // console.log(content);
     if (!isValidObjectId(commentId)) throw new apiError(400, "Invalid comment Id");
     const updatedComment = await Comment.findByIdAndUpdate(
         commentId,
@@ -118,6 +119,7 @@ const getVideoComments = asyncHandler(async (req, res) => {
 })
 const deleteComment = asyncHandler(async (req, res) => {
     const { commentId } = req.params;
+    console.log(commentId)
     const comment = await Comment.findById(commentId)
     if (!comment) throw new apiError(404, "Comment not found");
     if (comment.owner.toString() !== req.user?._id.toString()) {

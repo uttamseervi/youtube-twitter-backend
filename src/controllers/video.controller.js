@@ -1,11 +1,13 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { Video } from "../models/video.models.js"
 import { Like } from "../models/likes.models.js"
+import { User } from "../models/user.models.js"
 import { Comment } from "../models/comment.models.js"
 import { apiError } from "../utils/apiError.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import { uploadonCloudinary, deleteOnCloudinary } from "../utils/cloudinary.js";
-import { isValidObjectId, Types } from "mongoose";
+import mongoose, { isValidObjectId } from "mongoose";
+
 
 
 
@@ -17,9 +19,13 @@ const getAllVideos = asyncHandler(async (req, res) => {
 
 const getVideoById = asyncHandler(async (req, res) => {
     const { videoId } = req.params
+
     if (!isValidObjectId(videoId)) throw new apiError(400, "Invalid VideoId");
+
     const video = await Video.findById(videoId);
+    // console.log(videoId)
     if (!video) throw new apiError(400, "Failed to find the video");
+
     const videoDetails = await Video.aggregate([
         {
             $match: {
@@ -187,10 +193,17 @@ const publishVideo = asyncHandler(async (req, res) => {
 
 const deleteVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params
+    // console.log(videoId)
     if (!isValidObjectId(videoId)) throw new apiError(400, "Invalid videoID");
+
     const video = await Video.findById(videoId);
     if (!video) throw new apiError(400, "Video not found");
-    if (video.owner.toString() !== req.user?._id) throw new apiError(400, "only owner can delete the video");
+    // console.log("the user is ",req.user?._id)
+    console.log("the owner of the video is",video.owner.toString())
+    console.log("the req user is",req.user?._id.toString())
+    // console.log(video.owner.toString() === req.user?._id.toString() )
+    if (video.owner.toString() !== req.user?._id.toString()) throw new apiError(400, "only owner can delete the video");
+
     const deletedVideo = await Video.findByIdAndDelete(video?._id);
     if (!deletedVideo) throw new apiError(400, "Failed to delete the video please try again later");
 
@@ -278,4 +291,11 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
 })
 
 
-export { publishVideo, deleteVideo, updateVideo, togglePublishStatus, getAllVideos, getVideoById, }
+export {
+    publishVideo,
+    deleteVideo,
+    updateVideo,
+    togglePublishStatus,
+    getAllVideos,
+    getVideoById,
+}
