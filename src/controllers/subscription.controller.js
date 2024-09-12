@@ -7,21 +7,23 @@ import { User } from "../models/user.models.js"
 
 const toggleSubscription = asyncHandler(async (req, res) => {
     const { channelId } = req.params
-    const { userId } = req.user._id
+    const userId = req.user._id
     const isSubscribed = await Subscription.findOne({ subscriber: userId, channel: channelId });
     if (isSubscribed) {
         await Subscription.deleteOne({ subscriber: userId, channel: channelId });
         return res
             .status(200)
-            .json(apiResponse(200, { isSubscribed: false }, "Subscription cancelled successfully"))
+            .json(new apiResponse(200, { isSubscribed: false }, "Subscription cancelled successfully"))
 
     }
-    else {
-        const subscription = await Subscription.create({ subscriber: userId, channel: channelId });
-        return res
-            .status(200)
-            .json(new apiResponse(200, { isSubscribed: false }, "Channel subscribed successfully"));
-    }
+
+    const subscription = await Subscription.create({ subscriber: userId, channel: channelId });
+    if (!subscription) throw new apiError(400, "Failed to subscribe the channel");
+
+    return res
+        .status(200)
+        .json(new apiResponse(200, { isSubscribed: true }, "Channel subscribed successfully"));
+
 })
 const getUserChannelSubscribers = asyncHandler(async (req, res) => {
     const { channelId } = req.params;

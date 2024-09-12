@@ -27,7 +27,7 @@ const getPlaylistById = asyncHandler(async (req, res) => {
     const playlist = await Playlist.aggregate([
         {
             $match: {
-                _id: mongoose.Types.ObjectId(playlistId)
+                _id:new mongoose.Types.ObjectId(playlistId)
             }
         },
         {
@@ -101,7 +101,7 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
     const userPlaylists = await Playlist.aggregate([
         {
             $match: {
-                owner: mongoose.Types.ObjectId(userId),
+                owner: new mongoose.Types.ObjectId(userId),
             }
         },
         {
@@ -122,6 +122,7 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
                 }
             }
         },
+
         {
             $project: {
                 _id: 1,
@@ -129,10 +130,19 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
                 description: 1,
                 totalVideos: 1,
                 totalViews: 1,
-                updatedAt: 1
+                updatedAt: 1,
+                // videos: {
+                //     _id: 1,
+                //     "thumbnail.url": 1,
+                //     "videoFile.url": 1,
+                //     "views": 1,
+                //     title: 1,
+                //     description: 1
+                // }
             }
         }
     ])
+    console.log(userPlaylists)
 
     if (userPlaylists.length === 0) throw new apiError(400, "Failed to fetched the user playlists");
     return res
@@ -164,7 +174,7 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
     const alreadyExistingVideo = await Playlist.findOne({
         videos: {
             $elemMatch: {
-                $eq: mongoose.Types.ObjectId(videoId)
+                $eq: new mongoose.Types.ObjectId(videoId)
             }
         }
     });
@@ -204,13 +214,13 @@ const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
         throw new apiError(403, "Only the owner of the playlist or the owner of the video can remove the video from the playlist");
     }
 
-    const existingVideo = playList.videos.includes(mongoose.Types.ObjectId(videoId));
+    const existingVideo = playList.videos.includes(new mongoose.Types.ObjectId(videoId));
     if (!existingVideo) throw new apiError(404, "Video is not in the playlist");
 
     const updatedPlaylist = await Playlist.findByIdAndUpdate(
         playlistId,
         {
-            $pull: { videos: mongoose.Types.ObjectId(videoId) }
+            $pull: { videos: new mongoose.Types.ObjectId(videoId) }
         },
         { new: true }
     );

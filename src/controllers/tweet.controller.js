@@ -115,7 +115,7 @@ const getUserTweets = asyncHandler(async (req, res) => {
                 },
                 isLiked: {
                     $cond: {
-                        $if: {
+                        if: {
                             $in: [req.user._id, "$likeDetails.likedBy"]
                         },
                         then: true,

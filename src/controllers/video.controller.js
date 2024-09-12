@@ -7,6 +7,7 @@ import { apiError } from "../utils/apiError.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import { uploadonCloudinary, deleteOnCloudinary } from "../utils/cloudinary.js";
 import mongoose, { isValidObjectId } from "mongoose";
+import { text } from "express";
 
 
 
@@ -15,6 +16,84 @@ import mongoose, { isValidObjectId } from "mongoose";
 const getAllVideos = asyncHandler(async (req, res) => {
     const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
     //TODO: get all videos based on query, sort, pagination
+    const pipeline = [];
+    if (query) {
+        pipeline.push(
+            {
+                $search: {
+                    index: "search-videos",
+                    text: {
+                        query: query,
+                        path: ["title", "description"]
+                    }
+                }
+            }
+        )
+    }
+    if (isValidObjectId(userId)) {
+        pipeline.push(
+            {
+                $match: {
+                    owner: new mongoose.Types.ObjectId(userId)
+                }
+            },
+
+        )
+    }
+
+    pipeline.push(
+        {
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "ownerDetails",
+                pipeline: [
+                    {
+                        $project: {
+                            username: 1,
+                            "avatar.url": 1
+                        }
+                    }
+                ]
+            },
+
+        }
+    )
+
+    if (sortBy && sortType) {
+        pipeline.push(
+            {
+                $sort: {
+                    [sortBy]: sortType === "asc" ? 1 : -1
+                }
+            }
+        )
+    } else {
+        pipeline.push(
+            {
+                $sort: {
+                    createdAt: -1
+                }
+            }
+        )
+    }
+    const videoAggregate =  Video.aggregate(pipeline);
+    // console.log("The aggregate paginate is ", videoAggregate)
+    if (videoAggregate.length === 0) throw new apiError(404, "No videos found");
+    const options = {
+        page: parseInt(page, 10),
+        limit: parseInt(limit, 10),
+    }
+    console.log("the options are ", options)
+    const video = await Video.aggregatePaginate(videoAggregate, options);
+    if (!video) throw new apiError(400, "Failed to fetch the videos")
+    console.log(video);
+
+    return res
+        .status(200)
+        .json(new apiResponse(200, video, "Videos Fetched Successfully"))
+
 })
 
 const getVideoById = asyncHandler(async (req, res) => {
@@ -199,8 +278,8 @@ const deleteVideo = asyncHandler(async (req, res) => {
     const video = await Video.findById(videoId);
     if (!video) throw new apiError(400, "Video not found");
     // console.log("the user is ",req.user?._id)
-    console.log("the owner of the video is",video.owner.toString())
-    console.log("the req user is",req.user?._id.toString())
+    console.log("the owner of the video is", video.owner.toString())
+    console.log("the req user is", req.user?._id.toString())
     // console.log(video.owner.toString() === req.user?._id.toString() )
     if (video.owner.toString() !== req.user?._id.toString()) throw new apiError(400, "only owner can delete the video");
 

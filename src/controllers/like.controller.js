@@ -135,11 +135,11 @@ const getLikedVideos = asyncHandler(async (req, res) => {
                     duration: 1,
                     createdAt: 1,
                     isPublished: 1,
-                    ownerDetails: {
-                        username: 1,
-                        fullName: 1,
-                        "avatar.url": 1,
-                    },
+                },
+                ownerDetails: {
+                    username: 1,
+                    fullName: 1,
+                    "avatar.url": 1,
                 },
             },
         }
@@ -148,7 +148,7 @@ const getLikedVideos = asyncHandler(async (req, res) => {
     if (!likedVideos) throw new apiError(400, "Failed to fetch the liked Videos");
     return res
         .status(200)
-        .json(new apiResponse(200, likedVideos, "Fetched all the liked videos"));
+        .json(new apiResponse(200, likedVideos[0], "Fetched all the liked videos"));
 })
 
 
